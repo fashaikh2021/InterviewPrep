@@ -1,13 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CATEGORIES } from "./data/categories";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
 import CategoryContent from "./components/CategoryContent";
 import TopicDetailModal from "./components/TopicDetailModal";
 
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth <= breakpoint : false
+  );
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= breakpoint);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 export default function App() {
   const [sel, setSel] = useState(null);
   const [activeTopic, setActiveTopic] = useState(null); // { catId, topicId }
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isMobile = useIsMobile();
   const [topicState, setTopicState] = useState(() => {
     const s = {};
     CATEGORIES.forEach((cat) => {
@@ -37,19 +51,53 @@ export default function App() {
     ? topicState[activeTopic.catId].find((t) => t.id === activeTopic.topicId)
     : null;
 
+  const selectCategory = (id) => {
+    setSel(id);
+    if (isMobile) setSidebarOpen(false);
+  };
+
+  const currentLabel = sel ? currentCat?.label : "Dashboard";
+
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#0E1117" }}>
+    <div className="app-shell">
+      {isMobile && (
+        <div className="mobile-topbar">
+          <button
+            className="hamburger-btn"
+            aria-label="Open menu"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M2 4.5H16M2 9H16M2 13.5H16" stroke="#E2E8F0" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          </button>
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 13, fontWeight: 600, color: "#38BDF8" }}>
+            .NET Lead
+          </div>
+          <div style={{ fontSize: 11, color: "#475569", marginLeft: "auto" }}>{currentLabel}</div>
+        </div>
+      )}
+
+      <div
+        className={`sidebar-backdrop${sidebarOpen ? " open" : ""}`}
+        onClick={() => setSidebarOpen(false)}
+      />
+
       <Sidebar
         sel={sel}
-        setSel={setSel}
+        setSel={selectCategory}
         topicState={topicState}
         totalDone={totalDone}
         allTopicsCount={allTopics.length}
         overallPct={overallPct}
+        isMobile={isMobile}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
-      <main style={{ flex: 1, padding: "32px 36px", overflowY: "auto", minHeight: "100vh" }}>
+
+      <main className="app-main">
         {!sel ? (
-          <Dashboard topics={topicState} onSelect={setSel} />
+          <Dashboard topics={topicState} onSelect={selectCategory} />
         ) : (
           <CategoryContent
             cat={currentCat}

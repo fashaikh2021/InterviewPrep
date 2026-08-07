@@ -8,7 +8,7 @@ export default function Dashboard({ topics, onSelect }) {
   const pct = Math.round((done / all.length) * 100);
 
   return (
-    <div style={{ maxWidth: 760 }}>
+    <div className="dash-wrap">
       {/* hero */}
       <div style={{ marginBottom: 28 }}>
         <div
@@ -19,11 +19,11 @@ export default function Dashboard({ topics, onSelect }) {
         >
           Lead .NET Developer · Interview Prep
         </div>
-        <h1 style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 26, fontWeight: 600, color: "#F1F5F9", marginBottom: 6, lineHeight: 1.2 }}>
+        <h1 className="dash-title" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 26, fontWeight: 600, color: "#F1F5F9", marginBottom: 6, lineHeight: 1.2 }}>
           Your study dashboard
         </h1>
         <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>
-          {all.length} topics across {CATEGORIES.length} categories. Click any topic to track progress.
+          {all.length} topics across {CATEGORIES.length} categories. Tap any topic to track progress.
         </p>
       </div>
 
@@ -35,7 +35,7 @@ export default function Dashboard({ topics, onSelect }) {
         }}
       >
         <ProgressRing pct={pct} color="#38BDF8" size={56} />
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12, color: "#94A3B8", marginBottom: 6 }}>Overall progress</div>
           <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 99, height: 5, overflow: "hidden" }}>
             <div style={{ background: "#38BDF8", width: `${pct}%`, height: "100%", borderRadius: 99, transition: "width 0.5s" }} />
@@ -47,7 +47,7 @@ export default function Dashboard({ topics, onSelect }) {
       </div>
 
       {/* category grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 24 }}>
+      <div className="cat-grid">
         {CATEGORIES.map((cat) => {
           const ts = topics[cat.id];
           const d = ts.filter((t) => t.status === "done").length;

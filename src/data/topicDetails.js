@@ -142,6 +142,27 @@ export const TOPIC_DETAILS = {
   appins: "Application Insights (Azure Monitor) auto-collects requests, dependencies (DB/HTTP calls), exceptions, and custom telemetry, with distributed tracing across services via correlation ids — the go-to tool for answering 'why was this specific request slow' in a production ASP.NET Core app.",
   profiling: "Profiling tools (dotnet-trace, PerfView, Visual Studio Profiler, Application Insights Profiler) capture where time/CPU/allocations are actually going in a running app, rather than guessing — knowing at least one of these well enough to describe a real profiling session is a strong senior-level signal.",
 
+  // ---- React ----
+  jsx: "JSX compiles to `React.createElement(...)` calls — nested tags become element objects building a virtual DOM tree, which React diffs against the previous tree to compute the minimal set of real DOM mutations. Interview angle: JSX isn't a template language, it's syntactic sugar for plain JS function calls, which is why arbitrary expressions work inside `{}`.",
+  components: "Functional components are plain JS functions that return JSX and use Hooks for state/lifecycle; class components extend `React.Component`, use `this.state`, and lifecycle methods like `componentDidMount`. Since Hooks (React 16.8) functional components are the default in modern codebases — know class components well enough to read legacy code, but favour functions in new work.",
+  "props-state": "Props are read-only data passed down from a parent (immutable from the child's perspective); state is local, mutable data owned by a component that triggers a re-render when updated via `useState`/`setState`. A common interview trap: mutating state directly (`state.x = 1`) instead of calling the setter — React won't detect the change and won't re-render.",
+  "hooks-basic": "`useState` returns a `[value, setter]` pair and preserves the value across re-renders; `useEffect` runs side effects (fetching, subscriptions, DOM work) after render, re-running whenever its dependency array changes — an empty array means 'once on mount', no array means 'every render'. Always specify the dependency array explicitly to avoid stale closures or infinite loops.",
+  reconciliation: "React's diffing algorithm compares the new virtual DOM tree to the previous one and patches only what changed, assuming different element types produce entirely different trees, and elements with a stable `key` are matched across renders even if their position moves. Using array index as `key` causes real bugs when a list is reordered or items are inserted/removed — a very common interview gotcha.",
+  "hooks-perf": "`useMemo` memoises an expensive computed value; `useCallback` memoises a function reference (useful when passing callbacks to memoised children); `React.memo` wraps a component so it skips re-rendering when its props are shallow-equal to the last render. All three exist purely for performance — reach for them once profiling shows a real problem, not by default, since they add their own overhead.",
+  useref: "`useRef` returns a mutable `{ current }` object that persists across renders without causing a re-render when it changes — used for direct DOM access (focus, measuring, scrolling) and for storing any 'instance variable' style value (previous value, interval id) that shouldn't trigger a render.",
+  "custom-hooks": "A custom hook is just a function whose name starts with `use` that calls other hooks internally, letting you extract and reuse stateful logic (`useFetch`, `useDebounce`, `useLocalStorage`) across components without render-prop or HOC wrapping. Interview angle: hooks share *logic*, not *state* — each component calling the hook gets its own independent state.",
+  context: "Context (`createContext`/`useContext`) passes data through the component tree without manually threading props at every level ('prop drilling') — typically theme, auth user, or locale. It isn't a full state-management replacement: every consumer re-renders when the context value changes, so it's best for low-frequency-change data needed broadly.",
+  controlled: "A controlled input's value is driven entirely by React state (`value={state}`, `onChange={setState}`), so React is the single source of truth; an uncontrolled input manages its own internal DOM state and you read it via a `ref` when needed. Controlled is the React-idiomatic default; uncontrolled suits simple forms, file inputs, or wrapping non-React widgets.",
+  forms: "Form handling means controlled inputs plus validation, either hand-rolled (state per field, validate on submit/blur) or via a library like React Hook Form (uncontrolled-by-default, ref-based, far fewer re-renders) or Formik. Know the tradeoff: hand-rolled controlled forms are simple to reason about but re-render on every keystroke; React Hook Form avoids that.",
+  router: "React Router handles client-side routing in a single-page app: matching the URL to a component tree without a full page reload, nested routes, dynamic segments (`/orders/:id`), and hooks like `useNavigate`/`useParams`. Interview angle: it's purely client-side — the server still needs to serve `index.html` for any path (or you use a framework like Next.js for true server-side routing).",
+  "state-mgmt": "For state shared across many components: Context + `useReducer` works for small/medium apps; Redux/Redux Toolkit gives one predictable store with time-travel debugging and middleware at the cost of boilerplate; lighter libraries like Zustand or Jotai give a similar shared-store model with far less ceremony. Interview angle: know when local component state is enough — reaching for global state too early is a common mistake.",
+  "error-boundary": "An Error Boundary is a class component implementing `static getDerivedStateFromError`/`componentDidCatch` that catches JS errors thrown anywhere in its child tree *during render* and shows a fallback UI instead of crashing the whole app. It can't catch errors in event handlers, async code, or itself — those still need their own try/catch.",
+  suspense: "Suspense lets a component 'wait' for something (a lazily-loaded component via `React.lazy`, or a Suspense-compatible data source) and show a fallback UI while it resolves, instead of manually tracking a loading boolean. Code-splitting with `React.lazy` + `Suspense` means the browser only downloads a route/component's JS bundle when it's actually needed, shrinking initial load time.",
+  concurrent: "React 18 introduced concurrent rendering: React can start rendering an update, pause it, and abandon or resume it without blocking the browser — enabling automatic batching (multiple state updates in one event batched into one re-render), `useTransition` (mark an update as low-priority/interruptible), and `useDeferredValue`. Interview angle: this is about responsiveness under load, not raw speed.",
+  "testing-react": "React Testing Library encourages testing components the way a user interacts with them (find by role/text, fire events, assert on the DOM) rather than testing internal implementation details/state, paired with Jest (or Vitest) as the test runner. `render`, `screen.getByRole`, and `userEvent` are the core API surface interviewers expect familiarity with.",
+  "api-calls": "Fetching data is usually done inside `useEffect` (or a data-fetching library like React Query/SWR, which add caching, retries, and background refetching for free). A detail interviewers check: always return a cleanup function or use an `AbortController` to avoid a 'setState after unmount' warning/race condition when the component unmounts before the fetch resolves.",
+  "perf-react": "Beyond `useMemo`/`useCallback`/`React.memo`: virtualise long lists (react-window), code-split routes with `lazy`+`Suspense`, avoid creating new object/array/function literals inline as props to memoised children, and profile with React DevTools' Profiler tab before optimising rather than guessing. Interview angle: be ready to describe a real perf problem you diagnosed and fixed, not just list API names.",
+
   // ---- AI Engineering ----
   layers: "A useful mental model for explaining AI systems in an interview: (1) the base foundation model, (2) fine-tuning/alignment on top of it, (3) retrieval/context (RAG, tools) that grounds it in real data, (4) orchestration/agents that chain reasoning and tool calls, (5) the application layer/UX that end users actually interact with.",
   agents: "An AI agent uses a model in a loop — plan, call tools/APIs, observe results, decide next steps — to accomplish multi-step tasks rather than just answering a single prompt. Tools like Claude Code/Claude agents extend this to real developer workflows: reading/writing files, running commands, and iterating based on results.",
@@ -156,6 +177,230 @@ export const TOPIC_DETAILS = {
 // C# code examples shown alongside the explanation in the detail popup, keyed by topic id.
 // Not every topic has (or needs) one -- infra/config-only or purely conceptual topics are omitted.
 export const TOPIC_CODE = {
+  // ---- React ----
+  jsx: `const element = <h1 className="title">Hello, {name}</h1>;
+
+// roughly compiles to:
+const element = React.createElement(
+  "h1",
+  { className: "title" },
+  "Hello, ", name
+);`,
+
+  components: `// Functional (modern, uses Hooks)
+function Greeting({ name }) {
+  const [count, setCount] = useState(0);
+  return <button onClick={() => setCount(c => c + 1)}>{name}: {count}</button>;
+}
+
+// Class (legacy)
+class Greeting extends React.Component {
+  state = { count: 0 };
+  render() {
+    return (
+      <button onClick={() => this.setState(s => ({ count: s.count + 1 }))}>
+        {this.props.name}: {this.state.count}
+      </button>
+    );
+  }
+}`,
+
+  "props-state": `function Cart({ items }) {          // items = prop, read-only here
+  const [open, setOpen] = useState(false); // state = owned, mutable
+
+  return (
+    <button onClick={() => setOpen(!open)}>
+      {items.length} items {open ? "▲" : "▼"}
+    </button>
+  );
+}`,
+
+  "hooks-basic": `function UserProfile({ userId }) {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(\`/api/users/\${userId}\`)
+      .then(r => r.json())
+      .then(data => { if (!cancelled) setUser(data); });
+
+    return () => { cancelled = true; };   // cleanup on unmount / userId change
+  }, [userId]);                            // re-run only when userId changes
+
+  return user ? <div>{user.name}</div> : <div>Loading…</div>;
+}`,
+
+  reconciliation: `// BAD — index as key breaks when items are reordered/inserted
+{todos.map((t, i) => <TodoRow key={i} todo={t} />)}
+
+// GOOD — stable, unique identity survives reordering
+{todos.map((t) => <TodoRow key={t.id} todo={t} />)}`,
+
+  "hooks-perf": `const ExpensiveList = React.memo(function ExpensiveList({ items, onSelect }) {
+  return items.map(i => <Row key={i.id} item={i} onSelect={onSelect} />);
+});
+
+function Parent({ items }) {
+  const sorted = useMemo(() => [...items].sort(), [items]);       // memoise value
+  const handleSelect = useCallback((id) => console.log(id), []);  // memoise fn ref
+
+  return <ExpensiveList items={sorted} onSelect={handleSelect} />;
+}`,
+
+  useref: `function TextInput() {
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    inputRef.current.focus();   // direct DOM access, no re-render triggered
+  }, []);
+
+  return <input ref={inputRef} />;
+}`,
+
+  "custom-hooks": `function useDebounce(value, delayMs) {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(id);
+  }, [value, delayMs]);
+
+  return debounced;
+}
+
+// usage: const debouncedQuery = useDebounce(query, 300);`,
+
+  context: `const AuthContext = createContext(null);
+
+function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  return (
+    <AuthContext.Provider value={{ user, setUser }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+function Toolbar() {
+  const { user } = useContext(AuthContext); // no prop drilling needed
+  return <span>{user?.name ?? "Guest"}</span>;
+}`,
+
+  controlled: `// Controlled — React state is the source of truth
+function ControlledInput() {
+  const [value, setValue] = useState("");
+  return <input value={value} onChange={e => setValue(e.target.value)} />;
+}
+
+// Uncontrolled — DOM owns the value, read via ref
+function UncontrolledInput() {
+  const ref = useRef(null);
+  const onSubmit = () => console.log(ref.current.value);
+  return <input ref={ref} defaultValue="" />;
+}`,
+
+  forms: `import { useForm } from "react-hook-form";
+
+function LoginForm() {
+  const { register, handleSubmit, formState: { errors } } = useForm();
+
+  const onSubmit = (data) => console.log(data);
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <input {...register("email", { required: true })} />
+      {errors.email && <span>Email is required</span>}
+      <button type="submit">Log in</button>
+    </form>
+  );
+}`,
+
+  router: `<BrowserRouter>
+  <Routes>
+    <Route path="/" element={<Home />} />
+    <Route path="/orders/:id" element={<OrderDetail />} />
+  </Routes>
+</BrowserRouter>
+
+function OrderDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  return <button onClick={() => navigate(-1)}>Back (order {id})</button>;
+}`,
+
+  "state-mgmt": `// Zustand — minimal shared store, no boilerplate/providers
+import { create } from "zustand";
+
+const useCartStore = create((set) => ({
+  items: [],
+  addItem: (item) => set((s) => ({ items: [...s.items, item] })),
+}));
+
+function CartBadge() {
+  const items = useCartStore((s) => s.items);
+  return <span>{items.length}</span>;
+}`,
+
+  "error-boundary": `class ErrorBoundary extends React.Component {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, info) {
+    logErrorToService(error, info);
+  }
+
+  render() {
+    if (this.state.hasError) return <FallbackUI />;
+    return this.props.children;
+  }
+}`,
+
+  suspense: `const OrderDetail = React.lazy(() => import("./OrderDetail"));
+
+function App() {
+  return (
+    <Suspense fallback={<Spinner />}>
+      <OrderDetail />
+    </Suspense>
+  );
+}`,
+
+  concurrent: `function SearchResults({ query }) {
+  const [isPending, startTransition] = useTransition();
+  const [results, setResults] = useState([]);
+
+  function handleChange(q) {
+    startTransition(() => {
+      setResults(search(q)); // low-priority, interruptible update
+    });
+  }
+
+  return <>{isPending ? <Spinner /> : <ResultsList items={results} />}</>;
+}`,
+
+  "testing-react": `import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+
+test("increments the counter on click", async () => {
+  render(<Counter />);
+  await userEvent.click(screen.getByRole("button", { name: /increment/i }));
+  expect(screen.getByText("1")).toBeInTheDocument();
+});`,
+
+  "api-calls": `useEffect(() => {
+  const controller = new AbortController();
+
+  fetch(\`/api/orders/\${orderId}\`, { signal: controller.signal })
+    .then(r => r.json())
+    .then(setOrder)
+    .catch(err => { if (err.name !== "AbortError") throw err; });
+
+  return () => controller.abort(); // cancel if component unmounts / orderId changes
+}, [orderId]);`,
+
   // ---- C# Fundamentals ----
   oop: `public class Account {
     private decimal _balance;                 // Encapsulation

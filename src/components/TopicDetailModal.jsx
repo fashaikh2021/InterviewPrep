@@ -17,30 +17,8 @@ export default function TopicDetailModal({ topic, catColor, catLabel, onClose, o
   const code = TOPIC_CODE[topic.id];
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed", inset: 0, background: "rgba(4,7,13,0.72)",
-        backdropFilter: "blur(2px)", display: "flex", alignItems: "center",
-        justifyContent: "center", zIndex: 1000, padding: 20,
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: "#161B27", border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: 14, maxWidth: 560, width: "100%", maxHeight: "80vh",
-          overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
-          animation: "modalIn 0.15s ease-out",
-        }}
-      >
-        <style>{`
-          @keyframes modalIn {
-            from { opacity: 0; transform: translateY(6px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-          }
-        `}</style>
-
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         {/* header */}
         <div style={{ padding: "18px 22px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
@@ -127,7 +105,7 @@ export default function TopicDetailModal({ topic, catColor, catLabel, onClose, o
         {/* footer */}
         <div
           style={{
-            padding: "14px 22px 20px", display: "flex", gap: 10,
+            padding: "14px 22px 20px", display: "flex", gap: 10, flexWrap: "wrap",
             borderTop: "1px solid rgba(255,255,255,0.06)",
           }}
         >

@@ -8,14 +8,12 @@ export default function TopicRow({ topic, onToggle, onOpenDetail }) {
 
   return (
     <div
+      className="topic-row"
       onClick={() => onOpenDetail(topic)}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        display: "flex", alignItems: "flex-start", gap: 10, padding: "9px 12px", borderRadius: 7,
-        cursor: "pointer",
         background: hov ? "rgba(255,255,255,0.04)" : isDone ? "rgba(56,189,248,0.03)" : "transparent",
-        marginBottom: 2, transition: "background 0.15s",
       }}
     >
       <div
@@ -42,6 +40,7 @@ export default function TopicRow({ topic, onToggle, onOpenDetail }) {
         {topic.text}
       </span>
       <span
+        className="topic-badge"
         style={{
           fontSize: 10, padding: "2px 8px", borderRadius: 99,
           background: m.bg, color: m.color, whiteSpace: "nowrap", flexShrink: 0,

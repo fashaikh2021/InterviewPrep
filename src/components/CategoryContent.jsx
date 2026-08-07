@@ -8,9 +8,9 @@ export default function CategoryContent({ cat, topics, onToggle, onOpenDetail })
   const pct = Math.round((done / topics.length) * 100);
 
   return (
-    <div style={{ maxWidth: 760 }}>
+    <div className="dash-wrap">
       {/* header */}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 24 }}>
+      <div className="cat-header">
         <div
           style={{
             width: 52, height: 52, borderRadius: 12, background: `${cat.color}18`,
@@ -20,7 +20,7 @@ export default function CategoryContent({ cat, topics, onToggle, onOpenDetail })
         >
           {cat.icon}
         </div>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 200 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
             <h2 style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 20, fontWeight: 600, color: "#F1F5F9" }}>
               {cat.label}
