@@ -15,7 +15,7 @@ export default function Sidebar({ sel, setSel, topicState, totalDone, allTopicsC
         <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 13, fontWeight: 600, color: "#38BDF8", marginBottom: 2 }}>
           .NET Lead
         </div>
-        <div style={{ fontSize: 11, color: "#475569" }}>Interview Prep · HAMBS</div>
+        <div style={{ fontSize: 11, color: "#475569" }}>Interview Prep</div>
       </div>
 
       {/* progress */}
