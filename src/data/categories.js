@@ -167,7 +167,7 @@ export const CATEGORIES = [
       { id: "monitoring", text: "Monitoring — Logs, Metrics, Alerts", status: "add" },
     ],
     interviewQ: "Explain the difference between a Kubernetes Pod and a Deployment." },
-  { id: "testing", label: "Testing", icon: "✅", color: "#F87171", priority: "high", badge: "Important for HAMBS",
+  { id: "testing", label: "Testing", icon: "✅", color: "#F87171", priority: "high", badge: "Important",
     topics: [
       { id: "unit", text: "Unit testing", status: "add" },
       { id: "integration", text: "Integration testing", status: "add" },
