@@ -172,6 +172,34 @@ export const TOPIC_DETAILS = {
   "resp-ai": "Responsible AI covers things like avoiding harmful/biased outputs, being transparent about AI involvement, protecting user data/privacy, and having human oversight for consequential decisions — relevant to mention if you've built anything AI-assisted at work, especially around code review and data handling.",
   prompt: "Prompt engineering is about clearly specifying context, constraints, examples, and desired output format to get reliable results from a model — practical techniques include few-shot examples, explicit step-by-step instructions, and structured output requests (e.g. asking for JSON with a defined schema).",
   rag: "Retrieval-Augmented Generation grounds a model's answers in your own data by retrieving relevant documents/chunks (usually via vector/embedding search) and injecting them into the prompt as context, so the model can answer accurately about information it wasn't trained on — a common practical building block for internal knowledge-base or documentation assistants.",
+
+  // ---- AWS ECS Fargate Deployment ----
+  "new-region": "Brand-new AWS regions roll out services gradually, so before building anything, check that the services you need (ECS, ECR, ALB, CodePipeline, etc.) are actually live there — some AWS Toolkit/CLI features can lag by months. Also expect fewer online examples/StackOverflow answers referencing a new region's exact name, and double-check IAM roles (like ecsTaskExecutionRole) don't already exist by default the way they might in an older, more-used region.",
+  "docker-multi": "When a .csproj references a sibling project via a relative path like ../EFLibrary/EFLibrary.csproj, the Docker build context must be the parent folder containing both projects — not the API project's own folder — or COPY simply can't see the referenced project and you get a confusing CS0246 'type not found' error instead of a clear 'file not found' one. Fix: build with -f SubFolder/Dockerfile from the parent directory, and COPY both .csproj files explicitly before restore so Docker's layer caching still works.",
+  ecr: "Amazon ECR is AWS's private Docker registry — conceptually equivalent to Azure Container Registry. You authenticate Docker to it with a short-lived token (aws ecr get-login-password piped into docker login), then tag and push images exactly like any other registry. Repositories are region-scoped, so the same account can have a same-named repo in multiple regions with completely separate image histories.",
+  "ecs-cluster": "In Fargate mode, an ECS 'cluster' isn't a set of servers you manage — it's a logical namespace that groups your services and running tasks together (contrast with the EC2 launch type, where a cluster really is a pool of instances you provision and patch). Every ECS service and task must belong to a cluster, and it's also where Container Insights metrics get reported if enabled.",
+  "task-def": "A task definition is the blueprint for a container: image, CPU/memory (at the container level and, for Fargate, also at the task level), port mappings, environment variables, and the log configuration. It's versioned — every register-task-definition call creates a new numbered revision rather than overwriting the old one, which is exactly what a CI/CD pipeline does on every deploy (register a new revision, then point the service at it).",
+  "iam-roles": "Two distinct IAM identities matter here: the task execution role (assumed by the ECS agent itself, needs ECR pull + CloudWatch Logs write permissions — AmazonECSTaskExecutionRolePolicy covers this) and a separate, narrowly-scoped IAM user/role for the CI/CD pipeline (needs ECR push + ecs:RegisterTaskDefinition/UpdateService, plus iam:PassRole scoped to just the execution role ARN). Conflating these into one broad-permission identity is a common real-world security smell interviewers like to probe.",
+  "alb-tg": "An Application Load Balancer doesn't send traffic straight to a task — it forwards to a target group, and Fargate tasks register with that target group as IP targets (target-type ip, since Fargate tasks don't have stable EC2 instance IDs). The target group runs its own periodic health checks (path + interval) independently of ECS's own container health checks, and a task only receives real traffic once the ALB marks it healthy.",
+  "sg-design": "Standard pattern: one security group on the ALB allowing inbound 80/443 from 0.0.0.0/0, and a second security group on the ECS tasks that only allows inbound on the container port FROM the ALB's security group (by referencing the SG ID as the source, not a CIDR). This means the application container is never directly reachable from the internet — every request must pass through the ALB first.",
+  "health-endpoint": "A minimal `app.MapGet(\"/health\", () => Results.Ok(\"Healthy\"))` gives the ALB something reliable to poll. A common gotcha behind a load balancer: UseHttpsRedirection() will 307-redirect the ALB's plain-HTTP health check (since TLS is meant to terminate at the ALB, not the container), and the ALB's health checker doesn't follow redirects the way a browser does — so it silently marks the target unhealthy forever unless that middleware is skipped in the containerized/Production environment.",
+  "azdo-service-conn": "The 'AWS Toolkit for Azure DevOps' marketplace extension must be installed at the Organization Settings level first (not project level) before an AWS-type service connection becomes selectable in Project Settings → Service Connections. The connection stores an IAM access key/secret pair that pipeline tasks reference by name via the awsCredentials input — never hardcoded into the YAML itself.",
+  "pipeline-ecr-ecs": "A typical two-stage pipeline: stage 1 builds the Docker image and pushes it to ECR (Docker@2 + ECRPushImage@1, tagged with $(Build.BuildId) so every run is traceable to a specific commit); stage 2 registers a new ECS task definition revision pointing at that new image tag and calls ecs update-service to trigger ECS's built-in rolling deployment — old tasks are drained only after new ones pass their health checks.",
+  "ecs-task-def-tool": "Despite having tasks for S3, Elastic Beanstalk, CodeDeploy, Lambda, and CloudFormation, the AWS Toolkit for Azure DevOps has no dedicated 'ECS deploy' task — the real-world pattern (used in AWS's own reference examples) is an AWSShellScript task that runs plain aws ecs register-task-definition and aws ecs update-service CLI commands. Knowing to fall back to raw CLI in an AWSShellScript task when a managed task doesn't exist is a good example of practical tooling awareness.",
+  "cost-toggle": "Scaling aws ecs update-service --desired-count 0 stops Fargate compute billing almost immediately (the biggest variable cost) while leaving the cluster, task definition, and ALB/target group intact for a fast restart — just aws ecs update-service --desired-count 1. The ALB itself keeps billing at 0 tasks though, so for longer breaks it needs to be deleted and recreated separately, which also means the DNS name changes and any dependent config (like an external firewall rule) needs updating.",
+  "cross-cloud-db": "Nothing stops a Fargate task in AWS from calling out to a database hosted in Azure (or vice versa) — it's just an outbound HTTPS/TDS connection over the public internet, gated by whatever firewall the database enforces (e.g. Azure SQL's IP allow-list). The catch: with assignPublicIp=ENABLED and no NAT Gateway, the task's public IP is ephemeral and changes on every restart/redeploy, so a firewall rule keyed to that IP breaks the next time the task cycles — a good real interview story about the gap between 'it works' and 'it's production-ready'.",
+  "nat-gateway": "The production fix for the ephemeral-IP problem: move Fargate tasks into a private subnet (no direct public IP) and route their outbound traffic through a NAT Gateway that sits in a public subnet with one fixed Elastic IP. Every task then shares that single, stable outbound IP, so a database firewall rule (Azure SQL, on-prem, wherever) only needs to be added once and never breaks on redeploy — at the cost of an hourly NAT Gateway charge plus data-processing fees.",
+  "alb-https": "Adding HTTPS means requesting/validating a certificate in AWS Certificate Manager (ACM) for your domain, adding a port-443 HTTPS listener on the ALB referencing that cert, and — usually — redirecting the existing port-80 listener to 443 instead of forwarding it. TLS terminates at the ALB; traffic from the ALB to the Fargate task typically stays plain HTTP inside the VPC, which is why the container itself doesn't need its own certificate.",
+
+  // ---- AWS Deploy — Gotchas & Troubleshooting ----
+  "dns-propagation": "A brand-new ALB's DNS record can resolve fine against a public resolver (e.g. Google's 8.8.8.8) while still failing against your ISP/router's own DNS cache for a while — worth testing with `nslookup <name> 8.8.8.8` before assuming the resource itself is broken. A quick workaround while waiting: hit the ALB's resolved IP directly with an explicit `Host` header, since ALBs route on the Host header rather than requiring the DNS name specifically.",
+  "cloudshell-pager": "The AWS CLI auto-pipes large JSON responses through `less` by default, which silently swallows every subsequent command you type as pager navigation instead of running it — confusing because there's no error, just commands that appear to do nothing. Fix: `export AWS_PAGER=\"\"` once per CloudShell session (or permanently via `~/.aws/config`'s `cli_pager =`) to get raw output instead.",
+  "docker-context-bug": "When a .csproj references a sibling project via a relative path (`../EFLibrary/...`), a Docker build scoped only to the API project's own folder can't see it — but the failure shows up downstream as a C# compiler error (`CS0246: type or namespace not found`) rather than a clear 'file not found', because `dotnet restore` treats a missing project reference as a warning, not a hard failure. The real fix is building from the parent folder that contains both projects, not chasing the compiler error itself.",
+  "port-conflict": "A Docker port-bind failure ('forbidden by its access permissions') can mean a different thing than 'port already in use' — on Windows it's sometimes Hyper-V/WSL2 reserving a chunk of the ephemeral port range, which you can check with `netsh interface ipv4 show excludedportrange protocol=tcp`. Also check for a container stuck in `Created` (never actually started) via `docker ps -a`, since a failed bind can leave one behind that still shows as 'using' the port.",
+  "stale-container": "Rebuilding an image with the same tag doesn't affect a container that's already running from the old build — Docker doesn't hot-swap a running container's underlying image. Always `docker stop`/`docker rm` the old container (or filter by `--filter ancestor=<image>`) before re-running, otherwise you'll be testing against stale code and get confused by 404s on endpoints you just added.",
+  "alb-toolkit-gap": "Not every CI/CD marketplace extension covers every AWS service the way you'd expect — the AWS Toolkit for Azure DevOps has tasks for S3, CodeDeploy, Lambda, CloudFormation, and Elastic Beanstalk, but no dedicated ECS deploy task. The practical lesson: verify a managed task actually exists (check the extension's docs/task list) before designing a pipeline around it, and know the raw-CLI-via-shell-task fallback pattern for when it doesn't.",
+  "ephemeral-ip-firewall": "With `assignPublicIp=ENABLED` and no NAT Gateway, a Fargate task's public IP changes every time it restarts, gets redeployed, or is scaled down and back up — so an IP-based firewall rule on a downstream resource (like Azure SQL) silently stops working after any of those events, with no warning until the next request fails. It's a good example of a fix that works today but isn't actually production-durable, and why NAT Gateway + Elastic IP (or a VPN/PrivateLink-style connection) is the real fix rather than re-adding the IP every time.",
+  "missing-alb": "Resources you created manually via CLI don't disappear on their own, but it's easy to lose track across a long session with many moving pieces — worth periodically confirming a resource still exists (`describe-load-balancers`, etc.) rather than assuming, especially before debugging something 'downstream' of it. Recreating an ALB gives it a brand-new ARN and DNS name, so everything that referenced the old one — the ECS service's `loadBalancers` config, any firewall rules tied to the old task IP, bookmarked URLs — needs to be updated too, not just the ALB itself.",
 };
 
 // C# code examples shown alongside the explanation in the detail popup, keyed by topic id.
@@ -1083,4 +1111,179 @@ var orders = await _db.Orders.Include(o => o.Customer).ToListAsync();`,
     ["OrderId"] = order.Id.ToString()
 });
 _telemetryClient.TrackDependency("Sql", "GetOrder", data, start, duration, success);`,
+
+  // ---- AWS ECS Fargate Deployment ----
+  "docker-multi": `# Dockerfile lives in ALLRESTAPI/, but build context must be the PARENT folder
+# so it can also see the sibling EFLibrary/ project
+COPY ["ALLRESTAPI/ALLRESTAPI.csproj", "ALLRESTAPI/"]
+COPY ["EFLibrary/SimpleLibraryEF.csproj", "EFLibrary/"]
+RUN dotnet restore "ALLRESTAPI/ALLRESTAPI.csproj"
+COPY . .
+WORKDIR "/src/ALLRESTAPI"
+RUN dotnet build "./ALLRESTAPI.csproj" -c Release -o /app/build
+
+# build from the parent dir, not the ALLRESTAPI subfolder:
+# docker build -f ALLRESTAPI/Dockerfile -t allrestapi:test .`,
+
+  ecr: `aws ecr create-repository --repository-name allrestapi --region ap-southeast-6
+
+aws ecr get-login-password --region ap-southeast-6 \\
+  | docker login --username AWS --password-stdin <account-id>.dkr.ecr.ap-southeast-6.amazonaws.com
+
+docker tag allrestapi:test <account-id>.dkr.ecr.ap-southeast-6.amazonaws.com/allrestapi:latest
+docker push <account-id>.dkr.ecr.ap-southeast-6.amazonaws.com/allrestapi:latest`,
+
+  "task-def": `{
+  "family": "allrestapi-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::<account-id>:role/ecsTaskExecutionRole",
+  "containerDefinitions": [{
+    "name": "allrestapi",
+    "image": "<account-id>.dkr.ecr.ap-southeast-6.amazonaws.com/allrestapi:latest",
+    "portMappings": [{ "containerPort": 8080, "protocol": "tcp" }],
+    "environment": [
+      { "name": "ASPNETCORE_URLS", "value": "http://+:8080" },
+      { "name": "ASPNETCORE_ENVIRONMENT", "value": "Production" }
+    ],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "/ecs/allrestapi",
+        "awslogs-region": "ap-southeast-6",
+        "awslogs-stream-prefix": "ecs"
+      }
+    },
+    "essential": true
+  }]
+}`,
+
+  "iam-roles": `# Task execution role -- assumed by the ECS agent itself
+aws iam create-role --role-name ecsTaskExecutionRole \\
+  --assume-role-policy-document file://trust-policy.json
+aws iam attach-role-policy --role-name ecsTaskExecutionRole \\
+  --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+# Separate, narrower pipeline user -- ECR push + ECS deploy only
+aws iam create-user --user-name allrestapi-pipeline
+aws iam put-user-policy --user-name allrestapi-pipeline \\
+  --policy-name allrestapi-pipeline-policy --policy-document file://pipeline-policy.json
+# policy grants: ecr:PutImage/BatchGetImage/etc, ecs:RegisterTaskDefinition,
+# ecs:UpdateService, and iam:PassRole scoped ONLY to the execution role ARN`,
+
+  "alb-tg": `aws elbv2 create-load-balancer --name allrestapi-alb \\
+  --subnets subnet-aaa subnet-bbb subnet-ccc \\
+  --security-groups sg-alb --scheme internet-facing --type application
+
+aws elbv2 create-target-group --name allrestapi-tg \\
+  --protocol HTTP --port 8080 --vpc-id vpc-xxxx --target-type ip \\
+  --health-check-path /health --health-check-interval-seconds 30
+
+aws elbv2 create-listener --load-balancer-arn $ALB_ARN \\
+  --protocol HTTP --port 80 \\
+  --default-actions Type=forward,TargetGroupArn=$TG_ARN`,
+
+  "sg-design": `# ALB security group -- public inbound
+aws ec2 authorize-security-group-ingress --group-id $ALB_SG \\
+  --protocol tcp --port 80 --cidr 0.0.0.0/0
+
+# Task security group -- ONLY reachable from the ALB's own SG, not from the internet
+aws ec2 authorize-security-group-ingress --group-id $TASK_SG \\
+  --protocol tcp --port 8080 --source-group $ALB_SG`,
+
+  "health-endpoint": `// Program.cs
+if (!app.Environment.IsEnvironment("Production"))
+{
+    app.UseHttpsRedirection();   // skip in the container -- ALB terminates TLS
+}
+
+app.MapGet("/health", () => Results.Ok("Healthy"));
+
+app.Run();`,
+
+  "pipeline-ecr-ecs": `# azure-pipelines.yml (excerpt)
+- task: Docker@2
+  inputs:
+    command: 'build'
+    Dockerfile: 'ALLRESTAPI/Dockerfile'
+    buildContext: '.'
+    repository: 'allrestapi'
+    tags: '$(Build.BuildId)'
+
+- task: ECRPushImage@1
+  inputs:
+    awsCredentials: 'aws-allrestapi'
+    regionName: 'ap-southeast-6'
+    sourceImageName: 'allrestapi'
+    sourceImageTag: '$(Build.BuildId)'
+    repositoryName: 'allrestapi'
+    pushTag: '$(Build.BuildId)'`,
+
+  "ecs-task-def-tool": `# AWSShellScript task -- no dedicated ECS deploy task exists in the toolkit
+- task: AWSShellScript@1
+  inputs:
+    awsCredentials: 'aws-allrestapi'
+    regionName: 'ap-southeast-6'
+    scriptType: 'inline'
+    inlineScript: |
+      sed "s|IMAGE_URI_PLACEHOLDER|$(ecrRepo):$(imageTag)|g" taskdef.json > taskdef-updated.json
+      TASKDEF_ARN=$(aws ecs register-task-definition \\
+        --cli-input-json file://taskdef-updated.json \\
+        --query 'taskDefinition.taskDefinitionArn' --output text)
+      aws ecs update-service --cluster allrestapi-cluster \\
+        --service allrestapi-service --task-definition $TASKDEF_ARN \\
+        --force-new-deployment`,
+
+  "cost-toggle": `# scale down between sessions -- stops Fargate compute billing
+aws ecs update-service --cluster allrestapi-cluster \\
+  --service allrestapi-service --desired-count 0
+
+# verify
+aws ecs describe-services --cluster allrestapi-cluster \\
+  --services allrestapi-service \\
+  --query "services[0].{desired:desiredCount,running:runningCount}"
+
+# spin back up when needed
+aws ecs update-service --cluster allrestapi-cluster \\
+  --service allrestapi-service --desired-count 1`,
+
+  "nat-gateway": `# conceptual shape of the fix -- move tasks to a private subnet,
+# route outbound through a NAT Gateway with one static Elastic IP
+
+aws ec2 allocate-address --domain vpc
+aws ec2 create-nat-gateway --subnet-id <public-subnet-id> \\
+  --allocation-id <eip-allocation-id>
+
+# then: update the private subnet's route table to send 0.0.0.0/0
+# through the NAT Gateway, and switch the ECS service's
+# awsvpcConfiguration to the private subnets with assignPublicIp=DISABLED`,
+
+  // ---- AWS Deploy — Gotchas & Troubleshooting ----
+  "dns-propagation": `# confirm it's DNS lag, not a broken resource
+nslookup allrestapi-alb-xxxx.ap-southeast-6.elb.amazonaws.com 8.8.8.8
+
+# bypass DNS entirely as an immediate workaround
+Invoke-WebRequest -UseBasicParsing -Uri http://<resolved-ip>/health \`
+  -Headers @{Host="allrestapi-alb-xxxx.ap-southeast-6.elb.amazonaws.com"}`,
+
+  "cloudshell-pager": `# stops the CLI from piping big JSON responses through less,
+# which otherwise swallows every command you type next
+export AWS_PAGER=""`,
+
+  "port-conflict": `# check what's actually holding the port
+docker ps -a
+netstat -ano | findstr :8080
+
+# check if Windows itself reserved the port (Hyper-V/WSL2)
+netsh interface ipv4 show excludedportrange protocol=tcp
+
+# fastest unblock -- just use a different host port
+docker run -p 8090:8080 -e ASPNETCORE_URLS=http://+:8080 allrestapi:test`,
+
+  "stale-container": `# remove every container built from this image before re-running
+docker ps -a --filter "ancestor=allrestapi:test" -q | ForEach-Object { docker stop $_; docker rm $_ }
+
+docker run -p 8080:8080 -e ASPNETCORE_URLS=http://+:8080 allrestapi:test`,
 };

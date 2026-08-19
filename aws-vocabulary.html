@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS Deployment Vocabulary — ALLRESTAPI Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a121e;
+    --bg2:#0d1726;
+    --panel:#0f1c2e;
+    --panel-border:rgba(255,255,255,0.08);
+    --grid-line:rgba(255,255,255,0.035);
+    --text:#dbe6f2;
+    --text-dim:#8ea2b8;
+    --text-faint:#5c728a;
+
+    --c-pipeline:#4fa6f2;
+    --c-compute:#f2a94f;
+    --c-network:#43d1a8;
+    --c-iam:#f2696b;
+    --c-tools:#9aa9c4;
+    --c-cross:#b98ff0;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0/40px 40px,
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0/40px 40px,
+      radial-gradient(ellipse 1200px 600px at 50% -10%, #14263c 0%, var(--bg) 55%);
+    background-color: var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    padding: 48px 24px 80px;
+  }
+
+  .wrap{ max-width: 1180px; margin: 0 auto; }
+
+  header{ margin-bottom: 40px; }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:8px;height:8px;
+    background: var(--c-compute);
+    display:inline-block;
+    border-radius:1px;
+    box-shadow: 0 0 8px var(--c-compute);
+  }
+  h1{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:700;
+    font-size: clamp(26px, 4vw, 38px);
+    line-height:1.15;
+    margin: 10px 0 8px;
+    letter-spacing: -0.01em;
+  }
+  h1 span{ color: var(--c-compute); }
+  .subhead{
+    color: var(--text-dim);
+    font-size: 15px;
+    max-width: 640px;
+    line-height:1.55;
+  }
+
+  .legend{
+    display:flex; flex-wrap:wrap; gap: 8px 18px;
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px dashed var(--panel-border);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--text-dim);
+  }
+  .legend-item{ display:flex; align-items:center; gap:7px; }
+  .legend-dot{ width:9px; height:9px; border-radius:2px; flex:none; }
+
+  .lane{
+    position:relative;
+    margin-bottom: 18px;
+    background: linear-gradient(180deg, var(--panel) 0%, rgba(15,28,46,0.55) 100%);
+    border: 1px solid var(--panel-border);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 18px 20px 20px;
+  }
+  .lane + .lane{ margin-top: 22px; }
+
+  .lane-flow{
+    position:absolute;
+    left: -1px; top: -14px;
+    width: 26px; height: 26px;
+    border-radius:50%;
+    background: var(--bg);
+    border: 1px solid var(--accent);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px; font-weight:600;
+    color: var(--accent);
+  }
+  .lane:not(:last-child)::after{
+    content:"";
+    position:absolute;
+    left:12px; bottom:-23px;
+    width:1px; height:22px;
+    background: repeating-linear-gradient(180deg, var(--accent) 0 4px, transparent 4px 8px);
+    opacity:0.55;
+  }
+
+  .lane-head{
+    display:flex; align-items:baseline; gap:10px;
+    margin-bottom:14px; margin-left: 20px;
+    flex-wrap:wrap;
+  }
+  .lane-title{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size: 15px;
+    color: var(--text);
+  }
+  .lane-tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    color: var(--accent);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.18);
+    padding: 2px 8px;
+    border-radius: 20px;
+    letter-spacing: 0.04em;
+  }
+
+  .chips{ display:flex; flex-wrap:wrap; gap:9px; margin-left: 20px; }
+
+  .chip{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.09);
+    padding: 8px 14px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: transform .12s ease, border-color .12s ease, background .12s ease, box-shadow .12s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .chip:hover, .chip:focus-visible{
+    border-color: var(--accent);
+    background: rgba(255,255,255,0.06);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px -6px var(--accent);
+    outline: none;
+  }
+  .chip:active{ transform: translateY(0); }
+
+  /* modal */
+  .backdrop{
+    position:fixed; inset:0;
+    background: rgba(4,9,16,0.72);
+    backdrop-filter: blur(3px);
+    display:none;
+    align-items:center; justify-content:center;
+    padding: 24px;
+    z-index: 50;
+  }
+  .backdrop.open{ display:flex; }
+
+  .modal{
+    width: 100%; max-width: 460px;
+    background: var(--bg2);
+    border: 1px solid var(--panel-border);
+    border-top: 3px solid var(--accent);
+    border-radius: 12px;
+    padding: 26px 26px 22px;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.6);
+    animation: pop .16s ease;
+  }
+  @keyframes pop{ from{ opacity:0; transform: translateY(6px) scale(.98);} to{opacity:1; transform:none;} }
+
+  .modal-tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .modal-title{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 19px;
+    font-weight:700;
+    margin: 0 0 12px;
+    color: var(--text);
+  }
+  .modal-body{
+    font-size: 14.5px;
+    line-height: 1.65;
+    color: var(--text-dim);
+  }
+  .modal-close{
+    margin-top: 20px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-faint);
+    background: none;
+    border: 1px solid var(--panel-border);
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: color .12s, border-color .12s;
+  }
+  .modal-close:hover{ color: var(--text); border-color: var(--text-faint); }
+
+  footer{
+    margin-top: 44px;
+    text-align:center;
+    color: var(--text-faint);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+  }
+
+  @media (max-width: 640px){
+    body{ padding: 32px 14px 60px; }
+    .lane{ padding-left:16px; padding-right:14px; }
+    .lane-head, .chips{ margin-left: 8px; }
+    .lane-flow{ display:none; }
+    .lane:not(:last-child)::after{ display:none; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .chip, .modal{ animation:none !important; transition:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">ALLRESTAPI · Azure DevOps → AWS ECS Fargate</div>
+    <h1>AWS Vocabulary, <span>Traced Through the Pipeline</span></h1>
+    <p class="subhead">Every AWS (and adjacent Azure) term from yesterday's deployment, grouped by where it sits in the flow. Tap any term for a short explanation.</p>
+
+    <div class="legend" id="legend"></div>
+  </header>
+
+  <main id="lanes"></main>
+
+  <footer>28 terms · 6 stages · click any chip to open</footer>
+</div>
+
+<div class="backdrop" id="backdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-tag" id="modalTag"></div>
+    <h2 class="modal-title" id="modalTitle"></h2>
+    <p class="modal-body" id="modalBody"></p>
+    <button class="modal-close" id="modalClose">Close (Esc)</button>
+  </div>
+</div>
+
+<script>
+const DATA = [
+  {
+    key: "pipeline", title: "1 · Trigger & Pipeline", tag: "Azure DevOps", color: "var(--c-pipeline)",
+    terms: [
+      ["Git Push (main)", "The trigger for the whole pipeline — any push to the main branch kicks off build-and-deploy automatically, no manual step required."],
+      ["Service Connection", "Stored AWS IAM credentials that let an Azure DevOps pipeline call AWS on your behalf, referenced by name rather than hardcoded in the YAML."],
+      ["Docker@2 task", "The pipeline step that builds the container image from the Dockerfile — using the parent folder as build context so it can see a sibling project like EFLibrary."],
+      ["ECRPushImage@1 task", "Pushes the freshly built image to Amazon ECR, tagged with the pipeline's build ID so every deployed image is traceable back to a commit."],
+      ["AWSShellScript@1 task", "Runs raw AWS CLI commands inside the pipeline — the fallback used here since the AWS Toolkit extension has no dedicated ECS deploy task."],
+      ["Rolling Deployment", "ECS's built-in deployment strategy: new tasks are started and health-checked before old ones are drained, so there's no downtime during a deploy."],
+    ]
+  },
+  {
+    key: "compute", title: "2 · Registry & Compute", tag: "AWS", color: "var(--c-compute)",
+    terms: [
+      ["Amazon ECR", "AWS's private Docker image registry — the direct equivalent of Azure Container Registry, authenticated via a short-lived login token."],
+      ["ECS Cluster", "A logical namespace that groups your services and running tasks together. In Fargate mode it isn't a pool of servers you manage yourself."],
+      ["Fargate", "The serverless compute engine for ECS — no EC2 instances to patch or size, you just declare CPU/memory per task and AWS runs it."],
+      ["Task Definition", "The versioned blueprint for a container: image, CPU/memory, port mappings, environment variables, and logging config. Every deploy registers a new revision."],
+      ["ECS Service", "Keeps a desired number of tasks running and drives the rolling deployment whenever a new task definition revision is registered."],
+      ["Execution Role", "The IAM role the ECS agent itself assumes to pull the image from ECR and write logs to CloudWatch — separate from any role the application code uses."],
+    ]
+  },
+  {
+    key: "network", title: "3 · Networking & Traffic", tag: "AWS", color: "var(--c-network)",
+    terms: [
+      ["VPC", "The isolated virtual network in which all your AWS resources live, subdivided into subnets across Availability Zones."],
+      ["Subnet", "A slice of the VPC's IP address range tied to one Availability Zone — the ALB and Fargate tasks were spread across three for redundancy."],
+      ["Security Group", "A virtual firewall attached to a resource. The ALB's group allows public inbound traffic; the task's group only accepts traffic from the ALB's group."],
+      ["Application Load Balancer", "The internet-facing entry point that receives HTTP requests and forwards them to a target group — the only thing that can reach the container."],
+      ["Target Group", "The pool of registered targets (Fargate tasks, as IP targets) the ALB routes to, continuously monitored by its own health check."],
+      ["Listener", "The ALB's rule for a specific port and protocol — here, port 80 HTTP — defining what traffic to accept and where to forward it."],
+      ["Health Check", "A periodic probe (GET /health) the target group uses to decide whether a task is ready to receive live traffic."],
+      ["NAT Gateway", "Lets a resource in a private subnet reach the internet outbound through one fixed IP, without being reachable inbound — the planned fix for the ephemeral task IP."],
+      ["Elastic IP", "A static, reserved public IPv4 address that never changes — paired with a NAT Gateway to give outbound traffic one permanent identity."],
+      ["Public IP (ephemeral)", "The dynamic IP auto-assigned to a Fargate task with assignPublicIp=ENABLED. It changes on every restart or redeploy — the exact reason the Azure SQL firewall rule kept breaking."],
+    ]
+  },
+  {
+    key: "iam", title: "4 · Identity & Access", tag: "AWS", color: "var(--c-iam)",
+    terms: [
+      ["IAM Role", "An identity a service (like the ECS agent) assumes temporarily to gain permissions, rather than relying on long-lived credentials."],
+      ["IAM User", "An identity with long-term access keys — used here specifically for the CI/CD pipeline's own AWS credentials, separate from the task's role."],
+      ["Least Privilege", "The principle behind using two separate identities today: the task execution role and the pipeline user each hold only the permissions they actually need."],
+    ]
+  },
+  {
+    key: "tools", title: "5 · Tools & Observability", tag: "AWS", color: "var(--c-tools)",
+    terms: [
+      ["AWS CloudShell", "A browser-based terminal, pre-authenticated with your console credentials, that all the manual setup commands were run from today."],
+      ["AWS CLI", "The command-line tool used throughout — both directly in CloudShell and inside the pipeline's AWSShellScript task."],
+      ["CloudWatch Logs", "Where the container's console output is shipped. The log group has to exist before a task starts, or the task fails to launch at all."],
+      ["Region — ap-southeast-6", "The physical AWS location resources run in: Auckland, a brand-new region (launched Sept 2025) chosen today for lower local latency."],
+    ]
+  },
+  {
+    key: "cross", title: "6 · Cross-Cloud & Extensions", tag: "Azure · Future", color: "var(--c-cross)",
+    terms: [
+      ["Azure SQL Firewall", "The IP allow-list gating access to the app's database. Had to be updated with the Fargate task's public IP before the app could query it from AWS."],
+      ["API Gateway", "A managed API layer that could sit in front of the ALB for per-client rate limiting, request transforms, or combining multiple backends — not needed for a single container today."],
+      ["VPC Link", "The connector that would let API Gateway reach resources inside a VPC, like the existing ALB, if API Gateway were added on top later."],
+    ]
+  },
+];
+
+const legendEl = document.getElementById('legend');
+DATA.forEach(lane => {
+  const item = document.createElement('div');
+  item.className = 'legend-item';
+  item.innerHTML = `<span class="legend-dot" style="background:${lane.color}"></span>${lane.tag}`;
+  legendEl.appendChild(item);
+});
+
+const lanesEl = document.getElementById('lanes');
+DATA.forEach((lane, i) => {
+  const laneEl = document.createElement('section');
+  laneEl.className = 'lane';
+  laneEl.style.setProperty('--accent', lane.color);
+
+  const num = document.createElement('div');
+  num.className = 'lane-flow';
+  num.textContent = (i+1 < 10 ? '0' : '') + (i+1);
+  laneEl.appendChild(num);
+
+  const head = document.createElement('div');
+  head.className = 'lane-head';
+  head.innerHTML = `<span class="lane-title">${lane.title.replace(/^\d+\s·\s/,'')}</span><span class="lane-tag">${lane.tag}</span>`;
+  laneEl.appendChild(head);
+
+  const chips = document.createElement('div');
+  chips.className = 'chips';
+  lane.terms.forEach(([term, def]) => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.textContent = term;
+    chip.addEventListener('click', () => openModal(lane, term, def));
+    chips.appendChild(chip);
+  });
+  laneEl.appendChild(chips);
+
+  lanesEl.appendChild(laneEl);
+});
+
+const modalBackdrop = document.getElementById('backdrop');
+const modalTagEl = document.getElementById('modalTag');
+const modalTitleEl = document.getElementById('modalTitle');
+const modalBodyEl = document.getElementById('modalBody');
+const modalCloseBtn = document.getElementById('modalClose');
+let lastFocused = null;
+
+function openModal(lane, term, def){
+  modalTagEl.textContent = lane.tag;
+  modalTagEl.style.color = lane.color;
+  modalTitleEl.textContent = term;
+  modalBodyEl.textContent = def;
+  modalBackdrop.querySelector('.modal').style.borderTopColor = lane.color;
+  lastFocused = document.activeElement;
+  modalBackdrop.classList.add('open');
+  modalCloseBtn.focus();
+}
+function closeModal(){
+  modalBackdrop.classList.remove('open');
+  if(lastFocused) lastFocused.focus();
+}
+modalCloseBtn.addEventListener('click', closeModal);
+modalBackdrop.addEventListener('click', (e) => { if(e.target === modalBackdrop) closeModal(); });
+document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && modalBackdrop.classList.contains('open')) closeModal(); });
+</script>
+
+</body>
+</html>

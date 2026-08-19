@@ -86,6 +86,20 @@ export default function Sidebar({
             />
           );
         })}
+        <div
+          style={{
+            padding: "10px 16px 3px", fontSize: 10, fontFamily: "'JetBrains Mono',monospace",
+            color: "#334155", textTransform: "uppercase", letterSpacing: "0.1em",
+          }}
+        >
+          Resources
+        </div>
+        <NavItem
+          icon="☁️"
+          label="AWS Vocabulary"
+          color="#F2A94F"
+          href="/aws-vocabulary.html"
+        />
       </nav>
 
       <div style={{ padding: "10px 16px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>

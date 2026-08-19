@@ -1,10 +1,12 @@
 import { useState } from "react";
 
-export default function NavItem({ icon, label, active, color, badge, onClick }) {
+export default function NavItem({ icon, label, active, color, badge, onClick, href }) {
   const [hov, setHov] = useState(false);
+  const Tag = href ? "a" : "div";
 
   return (
-    <div
+    <Tag
+      href={href}
       onClick={onClick}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
@@ -13,6 +15,8 @@ export default function NavItem({ icon, label, active, color, badge, onClick }) 
         borderLeft: `2px solid ${active ? color : "transparent"}`,
         background: active ? `${color}08` : hov ? "rgba(255,255,255,0.03)" : "transparent",
         transition: "all 0.15s",
+        textDecoration: "none",
+        color: "inherit",
       }}
     >
       <span style={{ fontSize: 13 }}>{icon}</span>
@@ -29,6 +33,6 @@ export default function NavItem({ icon, label, active, color, badge, onClick }) 
           {badge}
         </span>
       )}
-    </div>
+    </Tag>
   );
 }
