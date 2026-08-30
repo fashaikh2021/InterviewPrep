@@ -11,6 +11,7 @@ export default function Sidebar({
   isMobile,
   open,
   onClose,
+  onLogout,
 }) {
   return (
     <div className={`sidebar${isMobile && open ? " open" : ""}`}>
@@ -103,9 +104,21 @@ export default function Sidebar({
       </nav>
 
       <div style={{ padding: "10px 16px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-        <div style={{ fontSize: 10, color: "#334155" }}>
+        <div style={{ fontSize: 10, color: "#334155", marginBottom: 8 }}>
           {isMobile ? "Tap a category to explore topics" : "Click category to explore topics"}
         </div>
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            style={{
+              width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 7, padding: "7px 10px", color: "#94A3B8", fontSize: 11, cursor: "pointer",
+              fontFamily: "'Inter', sans-serif",
+            }}
+          >
+            Log out
+          </button>
+        )}
       </div>
     </div>
   );
