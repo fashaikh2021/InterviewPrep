@@ -4,6 +4,7 @@ import Sidebar from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
 import CategoryContent from "./components/CategoryContent";
 import TopicDetailModal from "./components/TopicDetailModal";
+import Login from "./components/Login";
 
 function useIsMobile(breakpoint = 768) {
   const [isMobile, setIsMobile] = useState(
@@ -18,6 +19,9 @@ function useIsMobile(breakpoint = 768) {
 }
 
 export default function App() {
+  const [isAuthed, setIsAuthed] = useState(
+    () => sessionStorage.getItem("prep_authed") === "true"
+  );
   const [sel, setSel] = useState(null);
   const [activeTopic, setActiveTopic] = useState(null); // { catId, topicId }
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -58,6 +62,20 @@ export default function App() {
 
   const currentLabel = sel ? currentCat?.label : "Dashboard";
 
+  const handleLogin = () => {
+    sessionStorage.setItem("prep_authed", "true");
+    setIsAuthed(true);
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("prep_authed");
+    setIsAuthed(false);
+  };
+
+  if (!isAuthed) {
+    return <Login onLogin={handleLogin} />;
+  }
+
   return (
     <div className="app-shell">
       {isMobile && (
@@ -93,6 +111,7 @@ export default function App() {
         isMobile={isMobile}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        onLogout={handleLogout}
       />
 
       <main className="app-main">
